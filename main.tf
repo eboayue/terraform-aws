@@ -6,7 +6,7 @@ provider "aws" {
 }
 
 
-# VPC and subne creation
+# VPC and subnet creation
 resource "aws_vpc" "vpc1" {
 	 cidr_block = "10.100.0.0/16"
 
@@ -46,6 +46,39 @@ resource "aws_subnet" "secondary" {
 }
 
 
+# Internet gateway creation
+resource "aws_internet_gateway" "gateway1" {
+	 vpc_id = "${aws_vpc.vpc1.id}"
+
+	 tags = {
+	      Name = "gateway1"
+	      }
+}
+
+# Route table creation and association
+resource "aws_route_table" "routetable1" {
+	 vpc_id = "${aws_vpc.vpc1.id}"
+
+	 route {
+	       cidr_block = "0.0.0.0/0"
+	       gateway_id = "${aws_internet_gateway.gateway1.id}"
+	       }
+
+	 tags {
+	      Name = "routetable1"
+	      }
+}
+
+resource "aws_route_table_association" "association1"{
+	 subnet_id = "${aws_subnet.public.id}"
+	 route_table_id = "${aws_route_table.routetable1.id}"
+}
+
+resource "aws_route_table_association" "association2"{
+	 subnet_id = "${aws_subnet.secondary.id}"
+	 route_table_id = "${aws_route_table.routetable1.id}"
+}
+
 # Security Group creation
 resource "aws_security_group" "Web" {
 	 name = "Web"
@@ -81,6 +114,7 @@ resource "aws_security_group" "Web" {
 		 }
 }
 
+# EC2 instance creation
 resource "aws_instance" "first" {
 	 ami = "ami-08692d171e3cf02d6"
 	 instance_type = "t2.micro"
