@@ -114,14 +114,63 @@ resource "aws_security_group" "Web" {
 		 }
 }
 
-# EC2 instance creation
-resource "aws_instance" "first" {
-	 ami = "ami-08692d171e3cf02d6"
+
+# Create Launch configuration
+resource "aws_launch_configuration" "TwitchConfig" {
+	 name_prefix = "TwitchConfig-"
+	 image_id = "ami-08692d171e3cf02d6"
 	 instance_type = "t2.micro"
-	 security_groups = ["${aws_security_group.Web.id}"]
-	 subnet_id = "${aws_subnet.public.id}"
 	 key_name = "TwitchServer"
-	 tags {
-	      Name = "first"
-	      }
+	 security_groups = ["${aws_security_group.Web.id}"]
+
+	 user_data = "${file("instance-setup.sh")}"
+	 lifecycle {
+	 	   create_before_destroy = true
+		   }
+}
+
+# Create Autoscaling group
+resource "aws_autoscaling_group" "Web_ASG" {
+	 name = "Web_ASG"
+	 launch_configuration = "${aws_launch_configuration.TwitchConfig.name}"
+	 min_size = 2
+	 max_size = 2
+	 vpc_zone_identifier = ["${aws_subnet.public.id}", "${aws_subnet.secondary.id}"]
+	 target_group_arns = ["${aws_lb_target_group.TwitchTG.arn}"]
+
+	 lifecycle {
+	 	   create_before_destroy = true
+		   }
+}
+
+# Create Load balancer
+resource "aws_lb" "TwitchLB" {
+	 name = "TwitchLB"
+	 load_balancer_type = "application"
+	 security_groups = ["${aws_security_group.Web.id}"]
+	 subnets = ["${aws_subnet.public.id}", "${aws_subnet.secondary.id}"]
+}
+
+# Create target group
+resource "aws_lb_target_group" "TwitchTG" {
+	 name = "TwitchTG"
+	 port = 80
+	 protocol = "HTTP"
+	 vpc_id = "${aws_vpc.vpc1.id}"
+
+	 health_check {
+	 	      port = 80
+		      }
+}
+
+# Create Listener
+resource "aws_lb_listener" "TwitchTGlisten" {
+	 load_balancer_arn = "${aws_lb.TwitchLB.arn}"
+	 port = 80
+	 protocol = "HTTP"
+	 
+	 default_action {
+	 		type = "forward"
+			target_group_arn = "${aws_lb_target_group.TwitchTG.arn}"
+			}
 }
