@@ -225,9 +225,6 @@ data "aws_iam_policy_document" "logodata" {
 			"s3:GetObjectVersionForReplication",
 			"s3:GetBucketLocation",
 			"s3:GetObjectVersion",
-			"s3:GetAccountPublicAccessBlock",
-			"s3:ListAllMyBuckets",
-			"s3:HeadBucket",
 			"s3:ListBucket"
 			]
 		resources = [
@@ -235,6 +232,16 @@ data "aws_iam_policy_document" "logodata" {
 			"arn:aws:s3:::twitchlogo/*"
 			]
 		}
+
+	statement {
+		effect = "Allow"
+		actions = [
+		"s3:GetAccountPublicAccessBlock",
+		"s3:ListAllMyBuckets",
+		"s3:HeadBucket"
+		]
+		resources = [ "*"]
+	}
 }
 
 resource "aws_iam_policy" "logobucketpolicy" {
