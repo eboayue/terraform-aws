@@ -118,13 +118,12 @@ resource "aws_security_group" "Web" {
 # Create Launch configuration
 resource "aws_launch_configuration" "TwitchConfig" {
 	name_prefix = "TwitchConfig-"
-	image_id = "ami-08692d171e3cf02d6"
+	image_id = "ami-06d555673a37a0611"
 	instance_type = "t2.micro"
 	key_name = "TwitchServer"
 	security_groups = ["${aws_security_group.Web.id}"]
 	iam_instance_profile = "${aws_iam_instance_profile.logoprofile.name}"
 
-	user_data = "${file("instance-setup.sh")}"
 	lifecycle {
 		create_before_destroy = true
 		}
